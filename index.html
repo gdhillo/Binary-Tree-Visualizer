@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="./static/css/style.css">
+        <script type="text/javascript" src="./static/js/brython.js"></script>  
+        <script type="text/javascript" src="./static/js/brython_stdlib.js"></script>  
+
+
+        <title>Binary Tree Visualizer</title>
+    </head>
+    <body onload="brython()">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col">
+                    <input id="input"  class="form-control" id="InputNode" placeholder="Insert to Binary Tree">
+                 </div>
+                 <div class="col">
+                    <button id="btn" type="submit" class="btn btn-primary">Submit</button>
+                    <button id="btn2" type="submit" class="btn btn-danger">Clear Tree</button>
+                 </div>
+            </div>
+        </div>
+
+        <div id="nodes_container">
+            <div id="nodes">
+            </div>
+            <svg id="lines" height="100%" width="100%">
+            </svg>
+        </div>
+
+        <script type="text/python">
+            from browser import document, window, alert, console
+            import queue
+
+            root = None
+            
+            class Node:
+                def __init__(self, data):
+                    self.left = None
+                    self.right = None
+                    self.parent = None
+                    self.data = data
+                    self.x = 0
+                    self.y = 0
+
+                def insert(self, data):
+                    if data < self.data:
+                        if self.left is None:
+                            self.left = Node(data)
+                            self.left.parent = self
+                        else:
+                            self.left.insert(data)
+                    elif data > self.data:
+                        if self.right is None:
+                            self.right = Node(data)
+                            self.right.parent = self
+                        else:
+                            self.right.insert(data)
+                    
+
+                def PrintTree(self):
+                    if self.left:
+                        self.left.PrintTree()
+                    print(self.data, end=" ")
+                    if self.right:
+                        self.right.PrintTree()
+
+            def deleteTree(node): 
+                if node is None: 
+                    return
+                node.left = deleteTree(node.left)  
+                node.right = deleteTree(node.right)  
+                node = None
+  
+                
+            def renderTree(root, element = document['nodes'], element2 = document['lines']):
+                q = queue.Queue()
+                height = 50
+                root.x = window.innerWidth/2
+                root.y = 100
+                q.put(root)
+                element.innerHTML = "<div class=\"node\" style=\"top:"+str(root.y)+"px; left:"+str(root.x)+"px;\" ><div class=\"circle\" id=\""+str(root.data)+"\"><div class=\"numbers\">"+str(root.data)+" </div></div></div>"
+                while not q.empty():
+                    node = q.get()
+                    if node.left is not None:
+                        q.put(node.left)
+                        node.left.x = node.x - 100
+                        temp = node.left
+                        while temp is not None:
+                            if temp.right is not None:
+                                node.left.x -=100
+                            temp = temp.right
+                        node.left.y = node.y + height
+                        element.innerHTML += "<div class=\"node\" style=\"top:"+str(node.left.y)+"px; left:"+str(node.left.x)+"px;\" ><div class=\"circle\" id=\""+str(node.left.data)+"\"><div class=\"numbers\">"+str(node.left.data)+" </div></div></div>"
+                        x1 = document[str(node.data)].getBoundingClientRect().left +document[str(node.data)].getBoundingClientRect().width/2
+                        y1 = document[str(node.data)].getBoundingClientRect().top +document[str(node.data)].getBoundingClientRect().height/2-height
+                        x2 = document[str(node.left.data)].getBoundingClientRect().left +document[str(node.left.data)].getBoundingClientRect().width/2
+                        y2 = document[str(node.left.data)].getBoundingClientRect().top +document[str(node.left.data)].getBoundingClientRect().height/2-height
+                        element2.innerHTML += getLine(x1, y1, x2, y2)
+                    if node.right is not None:
+                        q.put(node.right)
+                        node.right.x = node.x + 100
+                        temp = node.right
+                        while temp is not None:
+                            if temp.left is not None:
+                                node.right.x +=100
+                            temp = temp.left
+                        node.right.y = node.y + height
+                        element.innerHTML += "<div class=\"node\" style=\"top:"+str(node.right.y)+"px; left:"+str(node.right.x)+"px;\" ><div class=\"circle\" id=\""+str(node.right.data)+"\"><div class=\"numbers\">"+str(node.right.data)+" </div></div></div>"
+                        x1 = document[str(node.data)].getBoundingClientRect().left +document[str(node.data)].getBoundingClientRect().width/2
+                        y1 = document[str(node.data)].getBoundingClientRect().top +document[str(node.data)].getBoundingClientRect().height/2-height
+                        x2 = document[str(node.right.data)].getBoundingClientRect().left +document[str(node.right.data)].getBoundingClientRect().width/2
+                        y2 = document[str(node.right.data)].getBoundingClientRect().top +document[str(node.right.data)].getBoundingClientRect().height/2-height
+                        element2.innerHTML += getLine(x1, y1, x2, y2)
+                                    
+            def getLine(x1, y1, x2, y2):
+                return "<line x1=\""+str(x1)+"\" y1=\""+str(y1)+"\" x2=\""+str(x2)+"\" y2=\""+str(y2)+"\" style=\"stroke: rgb(0, 0, 0);stroke-width:2;\"></line>"
+
+                    
+            def insertToBTree(ev):
+                try: # input validation
+                    value = int(document["input"].value)
+                    global root
+
+                    if root is None:
+                        root = Node(value)
+                    else:
+                        root.insert(value)
+    
+                    element = document["nodes"]
+                    element.innerHTML = ""
+                    element = document["lines"]
+                    element.innerHTML = ""
+    
+                    renderTree(root)
+                except ValueError:
+                    alert(str(document["input"].value) + " is not Valid input.")
+
+               
+
+            
+            def clearTree(ev):
+                element = document["nodes"]
+                element.innerHTML = ""
+                element = document["lines"]
+                element.innerHTML = ""
+                global root
+                root = deleteTree(root)
+
+            
+
+            document["btn"].bind("click", insertToBTree)
+            document["btn2"].bind("click", clearTree)
+        </script>
+      
+    </body>
+</html>
